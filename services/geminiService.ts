@@ -1,8 +1,9 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { Voter } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the Google Generative AI with the API key
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 // Utility for exponential backoff
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -29,9 +30,11 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 }
 
 export const analyzeIdentityOverlap = async (voters: Voter[]): Promise<string> => {
-  if (!process.env.API_KEY || voters.length < 2) return "Insufficient data for overlap analysis.";
+  if (!import.meta.env.VITE_GEMINI_API_KEY || voters.length < 2) return "Insufficient data for overlap analysis.";
 
   return withRetry(async () => {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
     const prompt = `
       You are an Identity Resolution Expert for the Election Commission. 
       Analyze these ${voters.length} voter records sharing the same Aadhaar Identity Hash: ${voters[0].aadhaarMeta?.aadhaarIdHash}.
@@ -48,22 +51,23 @@ export const analyzeIdentityOverlap = async (voters: Voter[]): Promise<string> =
       Response should be concise and professional.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
-      contents: prompt,
-    });
-
-    return response.text || "No recommendation generated.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "No recommendation generated.";
   }).catch(err => {
-    if (err?.message?.includes('429')) return "System Busy: API Quota exceeded. Please try again in 60 seconds.";
-    return "Error performing identity resolution.";
+    console.error("Gemini Analysis Failed:", err);
+    // FALLBACK: Return standardized message if API fails
+    const newestVoter = voters.reduce((prev, current) => (prev.lastVerifiedYear > current.lastVerifiedYear) ? prev : current);
+    return `**AI Unavailable - Standardized Resolution Protocol:**\n\nBased on metadata analysis, Record ${newestVoter.id} (${newestVoter.name}) appears to be the most current entry (Verified: ${newestVoter.lastVerifiedYear}).\n\n**Recommendation:** Retain Record ${newestVoter.id} and decommission older duplicates to maintain registry integrity.`;
   });
 };
 
 export const getRiskExplanation = async (voter: Voter): Promise<string> => {
-  if (!process.env.API_KEY) return "AI explanation unavailable (API Key missing).";
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return "AI explanation unavailable (API Key missing).";
 
   return withRetry(async () => {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
     const prompt = `
       You are an expert Election Verification Analyst. Analyze this voter record.
       
@@ -79,45 +83,45 @@ export const getRiskExplanation = async (voter: Voter): Promise<string> => {
       Provide a concise 3-sentence explanation of why this record is flagged, or if the flag seems like a false positive.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-pro',
-      contents: prompt,
-    });
-
-    return response.text || "No explanation generated.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "No explanation generated.";
   }).catch(err => {
-    if (err?.message?.includes('429')) return "API Rate Limit reached. The system is currently throttled. Please check your Gemini API billing/quota.";
-    return "An error occurred while generating the risk analysis.";
+    console.error("Gemini Risk Explanation Failed:", err);
+    // FALLBACK: Return standardized message if API fails
+    const reasons = voter.flaggedReasons.length > 0 ? voter.flaggedReasons.join(", ") : "Manual Verification Required";
+    return `**AI Service Warning:** Live analysis unavailable.\n\n**Standard Protocol Assessment:** This record has been flagged due to: ${reasons}. Recommend immediate field verification to confirm voter status and clear anomalies.`;
   });
 };
 
 export const extractDeceasedInfo = async (base64Data: string, mimeType: string): Promise<{ name: string, idNumber?: string, dateOfDeath?: string } | null> => {
-  if (!process.env.API_KEY) return null;
+  if (!import.meta.env.VITE_GEMINI_API_KEY) return null;
 
   return withRetry(async () => {
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: {
-        parts: [
-          { inlineData: { data: base64Data, mimeType } },
-          { text: "Extract details from this death certificate. Return JSON." }
-        ]
-      },
-      config: {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.OBJECT,
+          type: SchemaType.OBJECT,
           properties: {
-            name: { type: Type.STRING },
-            idNumber: { type: Type.STRING },
-            dateOfDeath: { type: Type.STRING }
+            name: { type: SchemaType.STRING },
+            idNumber: { type: SchemaType.STRING },
+            dateOfDeath: { type: SchemaType.STRING }
           },
           required: ["name"]
         }
       }
     });
 
-    return JSON.parse(response.text?.trim() || "null");
+    const result = await model.generateContent([
+      { inlineData: { data: base64Data, mimeType } },
+      "Extract details from this death certificate. Return JSON."
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+    return JSON.parse(text || "null");
   }).catch(err => {
     console.error("Extraction Failed after retries:", err);
     return null;
