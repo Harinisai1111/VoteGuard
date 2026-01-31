@@ -1,0 +1,7 @@
+{
+  "name": "VoteGuard",
+  "description": "A government-grade, AI-assisted decision-support system for election authorities to identify duplicate, outdated, or inconsistent voter records.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
