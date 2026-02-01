@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -11,34 +12,24 @@ import FieldTasksPage from './pages/FieldTasksPage';
 import AuditLogPage from './pages/AuditLogPage';
 import MunicipalUploadPage from './pages/MunicipalUploadPage';
 import IdentityClashPage from './pages/IdentityClashPage';
-import { User, Voter } from './types';
-import { MOCK_VOTERS } from './constants';
+import { User, Voter, UserRole } from './types';
+import { MOCK_VOTERS, MOCK_USERS } from './constants';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: clerkUser, isLoaded: isUserLoaded } = useUser();
+  const { signOut, isLoaded: isAuthLoaded } = useAuth();
   const [voters, setVoters] = useState<Voter[]>(MOCK_VOTERS);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem('voteguard_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('voteguard_user');
-      }
-    }
-    setLoading(false);
-  }, []);
+  // Map Clerk user to internal User type
+  const user: User | null = clerkUser ? {
+    id: clerkUser.id,
+    name: clerkUser.fullName || clerkUser.username || 'User',
+    role: (clerkUser.publicMetadata.role as UserRole) || UserRole.FIELD_OFFICER,
+    district: (clerkUser.publicMetadata.district as string) || 'Delhi'
+  } : null;
 
-  const handleLogin = (u: User) => {
-    setUser(u);
-    localStorage.setItem('voteguard_user', JSON.stringify(u));
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('voteguard_user');
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const updateVoter = (updatedVoter: Voter) => {
@@ -61,13 +52,13 @@ const App: React.FC = () => {
     }));
   };
 
-  if (loading) return null;
+  if (!isUserLoaded || !isAuthLoaded) return null;
 
   return (
     <HashRouter>
       {!user ? (
         <Routes>
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
