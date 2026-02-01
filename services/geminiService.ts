@@ -94,7 +94,7 @@ export const getRiskExplanation = async (voter: Voter): Promise<string> => {
   });
 };
 
-export const extractDeceasedInfo = async (base64Data: string, mimeType: string): Promise<{ name: string, idNumber?: string, dateOfDeath?: string } | null> => {
+export const extractDeceasedInfo = async (base64Data: string, mimeType: string): Promise<{ name: string, aadhaarNumber?: string, dateOfDeath?: string } | null> => {
   if (!import.meta.env.VITE_GEMINI_API_KEY) return null;
 
   return withRetry(async () => {
@@ -106,7 +106,7 @@ export const extractDeceasedInfo = async (base64Data: string, mimeType: string):
           type: SchemaType.OBJECT,
           properties: {
             name: { type: SchemaType.STRING },
-            idNumber: { type: SchemaType.STRING },
+            aadhaarNumber: { type: SchemaType.STRING },
             dateOfDeath: { type: SchemaType.STRING }
           },
           required: ["name"]
