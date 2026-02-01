@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VoteGuard - PNG Certificate Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #38bdf8;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #10b981;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Certificate Generator</h1>
+        <p>This utility will generate professional PNG death certificates for <b>Karthik Nair</b> and <b>Sanjay Iyer</b>
+            using your browser's local rendering engine.</p>
+        <button class="btn" onclick="generateAll()">Generate & Download PNGs</button>
+        <div id="status" class="status">✓ Generated Successfully!</div>
+    </div>
+
+    <canvas id="certCanvas" width="1600" height="2200"></canvas>
+
+    <script>
+        function drawCertificate(ctx, name, idHash, certNo, place) {
+            // Background
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, 1600, 2200);
+
+            // Border
+            ctx.strokeStyle = "#1e293b";
+            ctx.lineWidth = 40;
+            ctx.strokeRect(40, 40, 1520, 2120);
+
+            ctx.lineWidth = 10;
+            ctx.strokeRect(100, 100, 1400, 2000);
+
+            // Header
+            ctx.fillStyle = "#1e293b";
+            ctx.textAlign = "center";
+            ctx.font = "bold 60px 'Times New Roman'";
+            ctx.fillText("GOVERNMENT OF TAMIL NADU", 800, 250);
+
+            ctx.font = "40px 'Times New Roman'";
+            ctx.fillText("DEPARTMENT OF CIVIL REGISTRATION", 800, 320);
+
+            ctx.font = "bold 80px 'Times New Roman'";
+            ctx.fillText("DEATH CERTIFICATE", 800, 450);
+
+            // Watermark
+            ctx.save();
+            ctx.translate(800, 1100);
+            ctx.rotate(-Math.PI / 4);
+            ctx.font = "bold 150px Arial";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.03)";
+            ctx.fillText("OFFICIAL RECORD", 0, 0);
+            ctx.restore();
+
+            // Content Area
+            ctx.textAlign = "left";
+            ctx.fillStyle = "#000000";
+            let y = 650;
+            const labelX = 200;
+            const valueX = 700;
+            const rowHeight = 120;
+
+            const fields = [
+                ["Certificate No:", certNo],
+                ["Legal Name:", name],
+                ["Gender:", "MALE"],
+                ["AADHAAR NUMBER:", "XXXX-XXXX-" + idHash],
+                ["Date of Death:", "24/01/2024"],
+                ["Place of Death:", place],
+                ["Registration Date:", "26/01/2024"]
+            ];
+
+            fields.forEach(([label, value]) => {
+                ctx.font = "bold 40px 'Times New Roman'";
+                ctx.fillText(label.toUpperCase(), labelX, y);
+
+                if (label === "Legal Name:") {
+                    ctx.font = "bold 55px 'Times New Roman'";
+                } else if (label === "AADHAAR NUMBER:") {
+                    ctx.font = "bold 45px 'Courier New'";
+                    ctx.fillStyle = "#b91c1c";
+                } else {
+                    ctx.font = "45px 'Times New Roman'";
+                }
+
+                ctx.fillText(value, valueX, y);
+                ctx.fillStyle = "#000000";
+
+                // Dotted line
+                ctx.setLineDash([5, 10]);
+                ctx.beginPath();
+                ctx.moveTo(labelX, y + 20);
+                ctx.lineTo(1400, y + 20);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                y += rowHeight;
+            });
+
+            // Seal & Signature
+            ctx.font = "italic 35px 'Times New Roman'";
+            ctx.fillText("This is a digitally signed document authorized by the state registrar.", 200, 1800);
+
+            // Stamp
+            ctx.strokeStyle = "rgba(128, 0, 128, 0.3)";
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(1300, 1900, 150, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(128, 0, 128, 0.3)";
+            ctx.font = "bold 30px Arial";
+            ctx.fillText("OFFICIAL SEAL", 1300, 1880);
+            ctx.fillText("REGISTRAR", 1300, 1920);
+            ctx.fillText("TAMIL NADU", 1300, 1960);
+
+            // Line for signature
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(200, 1950);
+            ctx.lineTo(500, 1950);
+            ctx.stroke();
+            ctx.font = "30px Arial";
+            ctx.fillText("Authorized Signatory", 350, 2000);
+        }
+
+        function download(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+
+        function generateAll() {
+            const canvas = document.getElementById('certCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Karthik Nair
+            drawCertificate(ctx, "KARTHIK NAIR", "2001", "TN/MAA/2024/001001", "Chennai, TN");
+            download(canvas, "death_certificate_karthik_nair.png");
+
+            // Sanjay Iyer
+            setTimeout(() => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawCertificate(ctx, "SANJAY IYER", "2002", "TN/CBE/2024/002002", "Coimbatore, TN");
+                download(canvas, "death_certificate_sanjay_iyer.png");
+
+                document.getElementById('status').style.opacity = 1;
+            }, 500);
+        }
+    </script>
+</body>
+
+</html>

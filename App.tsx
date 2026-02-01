@@ -9,7 +9,6 @@ import VoterListPage from './pages/VoterListPage';
 import FlaggedVotersPage from './pages/FlaggedVotersPage';
 import VoterDetailPage from './pages/VoterDetailPage';
 import FieldTasksPage from './pages/FieldTasksPage';
-import AuditLogPage from './pages/AuditLogPage';
 import MunicipalUploadPage from './pages/MunicipalUploadPage';
 import IdentityClashPage from './pages/IdentityClashPage';
 import { User, Voter, UserRole } from './types';
@@ -71,7 +70,6 @@ const App: React.FC = () => {
             <Route path="/clashes" element={<IdentityClashPage voters={voters} />} />
             <Route path="/field-tasks" element={<FieldTasksPage voters={voters} onUpdateVoter={updateVoter} />} />
             <Route path="/municipal-upload" element={<MunicipalUploadPage voters={voters} onDecommission={decommissionVoter} />} />
-            <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/login" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
