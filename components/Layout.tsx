@@ -21,7 +21,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     { name: 'National Roll', path: '/voters', icon: Users, roles: [UserRole.ELECTION_OFFICER, UserRole.ADMIN, UserRole.MUNICIPAL_OFFICER] },
     { name: 'Integrity Flags', path: '/flagged', icon: AlertTriangle, roles: [UserRole.ELECTION_OFFICER, UserRole.ADMIN] },
     { name: 'Clash Center', path: '/clashes', icon: Layers, roles: [UserRole.ELECTION_OFFICER, UserRole.ADMIN] },
-
+    { name: 'Death Registry', path: '/municipal-upload', icon: FileText, roles: [UserRole.MUNICIPAL_OFFICER, UserRole.ADMIN] },
+    { name: 'Verification Tasks', path: '/field-tasks', icon: ClipboardList, roles: [UserRole.FIELD_OFFICER, UserRole.ADMIN] },
+  ];
 
   const filteredNav = navItems.filter(item => item.roles.includes(user.role));
 
